@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>week</title>
+    </head>
+    <body>
+        <h3>월 화 수 목 금 토 일</h3>
+        <hr>
+        <script>
+            let day = prompt("월 화 수 목 금 토 일 중에서 입력하세요", "");
+            if(day == "월" || day == "화" || day == "수" || day == "목") {
+                document.write(day + "요일은 출근");
+            }
+            else if (day == "금" || day == "토" || day == "일") {
+                document.write(day + "요일은 휴일");
+            }
+            else {
+                document.write("Error");
+            }
+        </script>
+    </body>
+</html>
