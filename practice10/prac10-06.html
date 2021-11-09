@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>setinterval</title>
+        <style>
+            div {
+                background: yellowgreen;
+                width: 200px;
+            }
+        </style>
+        <script>
+            let state = true;
+            var div;
+            var Clock;
+            function init() {
+                div = document.getElementById("div");
+                div.addEventListener("click", click);
+                Clock = setInterval("get_time()", 1000); //<<에서 Clock을 var로 선언하여 전역변수화 시켰으나
+            }
+            function click() {
+                state = !state;
+                if (state == true) {
+                    Clock = setInterval("get_time()", 1000);
+                    div.style.color = "black";
+                } else {
+                    div.style.color = "gray";
+                    clearInterval(Clock); //<<전역변수인 Clock을 읽어오지 못함
+                }
+            }
+            function get_time() {
+                let date = new Date();
+                let text = date.toLocaleString();
+                div.innerHTML = text;
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <h3>div 태그에 시계 만들기</h3>
+        <tr>시계를 클릭하면 시계가 멈추고 다시 클릭하면 가기 시작한다.</tr>
+        <hr>
+        <div id="div"></div>
+    </body>
+</html>

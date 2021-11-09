@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>산수를 풀어봅시다</title>
+	
+	<script src="prac10-08.js">
+	</script>	
+	</head>
+	<body onload="ontime(), make()">
+		<h3>산수 문제를 풀어 봅시다.</h3>
+		문제는 자동으로 생성되며, 10초가 지나면 자동 채점됩니다.
+		<div>
+			남은 시간 <span id="time">0</span>
+		</div>
+		<hr>
+		<form>
+			<table>
+				<tr>	
+					<td class="one"></td>
+					<td><input class="two" type="text" size="6"></td>
+				</tr>
+				<tr>
+					<td class="one"></td>
+					<td><input class="two" type="text" size="6"></td>
+				</tr>
+				<tr>
+					<td class="one"></td>
+					<td><input class="two" type="text" size="6"></td>
+				</tr>
+				<tr>
+					<td class="one"></td>
+					<td><input class="two" type="text" size="6"></td>
+				</tr>
+				<tr>
+					<td><button type="button" onclick="ontime(), make()">다시</button></td>
+					<td><span id="grade">0</span>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+				</tr>
+			</table>
+		</form>
+	</body>
+</html>
