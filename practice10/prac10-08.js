@@ -19,6 +19,10 @@ var show=null, count;
 		}
 		function make()	//문제 만들기 함수
 		{
+			for(i=0; i<one.length; i++)
+			{
+				one[i].style.textDecoration = "";
+			}
 			var one = document.getElementsByClassName("one");
 			var two = document.getElementsByClassName("two");
 			for(i=0; i<one.length; i++)
@@ -62,8 +66,5 @@ var show=null, count;
 					one[i].style.textDecoration = "line-through";
 			}
 			document.getElementById("grade").innerHTML = countgrade;	// 정답 개수 출력
-			for(i=0; i<one.length; i++)
-			{
-				one[i].style.textDecoration = "";
-			}
+			
 		}
