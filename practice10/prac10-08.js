@@ -19,10 +19,7 @@ var show=null, count;
 		}
 		function make()	//문제 만들기 함수
 		{
-			for(i=0; i<one.length; i++)
-			{
-				one[i].style.textDecoration = "";
-			}
+			
 			var one = document.getElementsByClassName("one");
 			var two = document.getElementsByClassName("two");
 			for(i=0; i<one.length; i++)
@@ -43,6 +40,10 @@ var show=null, count;
 					case 3 : operator = "/"; 
 						break;
 				}
+				for(i=0; i<one.length; i++)
+			{
+				one[i].style.textDecoration = "";
+			}
 				one[i].innerHTML = num1 + operator + num2;	// 문제 출력
 			}
 		}
