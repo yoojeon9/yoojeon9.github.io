@@ -40,7 +40,8 @@ var show=null, count;
 					case 3 : operator = "/"; 
 						break;
 				}
-				
+
+				one[i].style.textDecoration = "";
 				one[i].innerHTML = num1 + operator + num2;	// 문제 출력
 			}
 		}
@@ -64,8 +65,5 @@ var show=null, count;
 					one[i].style.textDecoration = "line-through";
 			}
 			document.getElementById("grade").innerHTML = countgrade;	// 정답 개수 출력
-			for(i=0; i<one.length; i++)
-			{
-				one[i].style.textDecoration = "";
-			}
+			
 		}
