@@ -68,5 +68,4 @@ var show=null, count;
 			{
 				one[i].style.textDecoration = "";
 			}
-
-		
+		}
