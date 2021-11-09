@@ -5,12 +5,10 @@
         <title>HTML5</title>
         <script>
             window.onload = function () {
-                let agent = navigator
-                    .userAgent
-                    .toLowerCase();
-                let vendor = navigator
-                    .vendor
-                    .toLowerCase();
+                let agent = navigator.userAgent;
+                    
+                let vendor = navigator.vendor;
+                
 
                 if (agent.indexOf("Chrome") != -1 && vendor.indexOf("google inc.") != -1) 
                     alert("구글 Chrome 브라우저입니다.");
