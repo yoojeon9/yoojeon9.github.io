@@ -1,3 +1,8 @@
+<!--
+  공공 데이터 포털에서 데이터 가져와서 표로 출력하기
+  데이터 중에서 지역이랑 메시지 내용만 표로 출력.
+-->
+
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -35,6 +40,7 @@
             }
             xhr.open('GET', url + queryParams);
             xhr.send('');
+            // 위에 코드는 공공데이터포털에서 준 코드야.
         }
 
         function myFunction(xml) {
@@ -52,5 +58,4 @@
         }
 </script>
 </body>
-
 </html>
