@@ -1,0 +1,325 @@
+<!--
+    이건 수업시간에 누가 만들어서 배포한 코드
+    지도 불러와서 지역 클릭하면 지역 이름이 지도 아래에 뜨는거
+
+    이제 공공 데이터 포털에서 재난문자 불러와서 지역 선택하면 그 지역의 재난문자가 출력되게 하면 됨!
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>간단한 지도 표시하기</title>
+
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> 
+    
+    <!-- naver map -->
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=6hw7de51b7"></script>
+
+</head>
+
+<style>
+    table,th,td {
+      border : 1px solid black;
+      border-collapse: collapse;
+    }
+    th,td {
+      padding: 5px;
+    }
+</style>
+
+<body>
+<!-- 
+<div id="map" style="width:100%;height:600px;"></div>
+<div id="table">여기에 클릭된 지역의 정보가 표시됩니다.</div>
+ -->
+<div style="width:50%;float:left;height:100%;">
+	<div id="map" style="width:100%;height:1000px;"></div>
+</div>
+<div style="width:50%;float:left;height:100%;">
+	<div id="table">여기에 클릭된 지역의 정보가 표시됩니다.</div>
+	<table id="disaster"></table>
+</div>
+<script>
+function loadDoc_1() {
+var xhr = new XMLHttpRequest();
+var url = 'http://apis.data.go.kr/1741000/DisasterMsg4/getDisasterMsg2List'; /*URL*/
+var queryParams = '?' + encodeURIComponent('serviceKey') + '='+'nzYSW6L2EXIDbdSRn%2Fn%2F1YFkHomGLYQB8CgUlbyV1N0E3%2F9AqbBgz6Os3rxQB7AUQiKf%2B8F9mcx5jzIQZjoJSQ%3D%3D'; /*Service Key*/
+queryParams += '&' + encodeURIComponent('pageNo') + '=' + encodeURIComponent('1'); /**/
+queryParams += '&' + encodeURIComponent('numOfRows') + '=' + encodeURIComponent('1000'); /**/
+queryParams += '&' + encodeURIComponent('type') + '=' + encodeURIComponent('xml'); /**/
+queryParams += '&' + encodeURIComponent('create_date') + '=' + encodeURIComponent('2021/06/22 00:00:00'); /**/
+queryParams += '&' + encodeURIComponent('area1') + '=' + encodeURIComponent('제주특별자치도'); /**/
+queryParams += '&' + encodeURIComponent('area2') + '=' + encodeURIComponent('서울특별시'); /**/
+
+xhr.open('GET', url + queryParams);
+xhr.onreadystatechange = function () {
+    if (this.readyState == 4) {
+        alert('Status: '+this.status+'nHeaders: '+JSON.stringify(this.getAllResponseHeaders())+'nBody: '+this.responseText);
+    }
+};
+
+xhr.send('');
+        }
+
+
+var HOME_PATH = "https://navermaps.github.io/maps.js/docs",
+    urlPrefix = HOME_PATH +'/data/region',
+    urlSuffix = '.json',
+    regionGeoJson = [],
+    loadCount = 0;
+
+    var map = new naver.maps.Map('map', {
+    center: new naver.maps.LatLng(37.5666805, 126.9784147),
+    zoom: 5,
+    minZoom: 6,
+    mapTypeId: naver.maps.MapTypeId.HYBRID,
+    zoomControl: true,
+    zoomControlOptions: {
+        position: naver.maps.Position.TOP_RIGHT
+    },
+    mapDataControl: false,
+    logoControlOptions: {
+        position: naver.maps.Position.LEFT_BOTTOM
+    },
+    disableKineticPan: false
+});
+
+
+// 지도가 로드된 다음에 일회성으로 실행되는 이벤트
+naver.maps.Event.once(map, 'init_stylemap', function () {
+    for (var i = 1; i < 18; i++) {
+        var keyword = i +'';
+
+        if (keyword.length === 1) {
+            keyword = '0'+ keyword;
+        }
+        // 01, 02, 03 생성
+
+        $.ajax({
+            url: urlPrefix + keyword + urlSuffix,
+            success: function(idx) {
+                return function(geojson) {
+                    regionGeoJson[idx] = geojson;
+
+                    loadCount++;
+                    // 17개 다 받아오면 그리기 시작
+                    if (loadCount === 17) {
+                        startDataLayer();
+                    }
+                }
+            }(i - 1)
+        });
+    }
+    loadDoc() ; // 재난문자 현황을 조회
+});
+
+var tooltip = $('<div style="position:absolute;z-index:1000;padding:5px 10px;background-color:#fff;border:solid 2px #000;font-size:14px;pointer-events:none;display:none;"></div>');
+tooltip.appendTo(map.getPanes().floatPane);
+
+
+function startDataLayer() {
+
+    map.data.setStyle(function(feature) {
+        
+        // 기본 라인 
+        var styleOptions = {
+            fillColor: '#ff0000',
+            fillOpacity: 0.0001,
+            strokeColor: '#ff0000',
+            strokeWeight: 2,
+            strokeOpacity: 0.4
+        };
+
+        // 마우스 올라갔을 떄 스타일
+        if (feature.getProperty('focus')) {
+            styleOptions.fillOpacity = 0.6;
+            styleOptions.fillColor = '#0f0';
+            styleOptions.strokeColor = '#0f0';
+            styleOptions.strokeWeight = 4;
+            styleOptions.strokeOpacity = 1;
+        }
+
+        return styleOptions;
+    });
+
+    // 제가 받아온 Geojson파일을 map.data
+    regionGeoJson.forEach(function(geojson) {
+        map.data.addGeoJson(geojson);
+    });
+
+    map.data.addListener('click', function(e) {
+    	onClickedDo(e) ;
+    });
+
+
+    map.data.addListener('mouseover', function(e) {
+        
+        // 이름을 받아
+        var feature = e.feature,
+            regionName = feature.getProperty('area1');
+            regionMSG = feature.getProperty('msg1');
+
+        // 지역명 뜨는거 
+        tooltip.css({
+            display: '',
+            left: e.offset.x,
+            top: e.offset.y
+        }).text(regionName);
+
+        map.data.overrideStyle(feature, {
+            fillOpacity: 0.6,
+            strokeWeight: 4,
+            strokeOpacity: 1
+        });
+    });
+
+    map.data.addListener('mouseout', function(e) {
+        // 툴팁 사라지게 하고
+        tooltip.hide().empty();
+
+        // 스타일 원상복귀시키는
+        map.data.revertStyle();
+    });
+    
+}
+
+</script>
+
+
+<script>
+var doPre = '' ; // 이전에 클릭한 지역
+function printMsg(s)
+{
+ 	document.getElementById("table").innerHTML = s ;
+     alert(s+'에 대한 정보를 알아옵니다.');
+}
+
+// 클릭한 지역의 정보를 테이블 형태로 보여준다.
+function printClickedInfo(s)
+{
+	document.getElementById("disaster").innerHTML = s ;
+}
+
+//지역이 클릭되었을 때 불리는 함수
+function onClickedDo(e)
+{
+	var feature = e.feature; // alert('b');
+	// alert('1');	alert(JSON.stringify(feature));	alert('2');
+ 	// 여기서 다른 선택된 지역 있는지 지워줘야 됩니당
+ 	// 지워주는 방법은
+ 	// map.data._features 를 foreach 하면서 focus 끄시면 됩니다.
+ 	if (feature.getProperty('focus') !== true) {
+        
+ 		var aDo = feature.getProperty('area1') ;
+     	feature.setProperty('focus', true);
+        
+     	printMsg(aDo) ;
+     	loadDoc(aDo) ;     	
+     	// 이전에 선택한 지역이 있었으면 focus를 끈다.
+     	if ( doPre )	{
+     		doPre.setProperty('focus', false);
+     		doPre = null ;
+     	}
+     	doPre = feature ;
+ 	} else {
+     feature.setProperty('focus', false);
+	}
+}
+
+// https://www.data.go.kr/data/3058822/openapi.do
+// 지역을 지정해서 알아올 수 없다. 시작할 때, 전부 알아와서 저장해 둔다.
+var msgAll = [] ;
+function loadDoc(area1) {
+	if ( area1 )	{
+		myFunction(area1) ;
+		return ;
+	}
+	printMsg('정보를 알아 오는중!!!') ;	
+	// 처음 모든 지역에 대한 정보를 알아온다.
+    var xhr = new XMLHttpRequest();
+    var url = 'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List'; /*URL*/
+    var pm = '?' + encodeURIComponent('serviceKey') + '=' + 'nzYSW6L2EXIDbdSRn%2Fn%2F1YFkHomGLYQB8CgUlbyV1N0E3%2F9AqbBgz6Os3rxQB7AUQiKf%2B8F9mcx5jzIQZjoJSQ%3D%3D'; /*Service Key*/
+    pm += '&' + encodeURIComponent('pageNo') + '=' + encodeURIComponent('1'); /**/
+    pm += '&' + encodeURIComponent('numOfRows') + '=' + encodeURIComponent('100'); /**/
+    pm += '&' + encodeURIComponent('type') + '=' + encodeURIComponent('xml'); /**/
+    // pm += '&' + encodeURIComponent('create_date') + '=' + encodeURIComponent('2021/06/22 00:00:00'); /**/
+    // if ( !area1 )	area1 = '서울특별시' ;
+    // pm += '&' + encodeURIComponent('area1') + '=' + encodeURIComponent(area1); /**/
+    // pm += '&' + encodeURIComponent('area1') + '=' + encodeURIComponent('제주특별자치도'); /**/
+    // pm += '&' + encodeURIComponent('area2') + '=' + encodeURIComponent('서울특별시'); /**/
+    xhr.onload = function () {
+    	printMsg('정보를 알아 왔습니다.!!!<br>지도상에서 원하는 지역을 클릭하면, 해당 지역에 대한 정보를 보입니다.') ;	
+        myFunction(this);
+    }
+    xhr.open('GET', url + pm);
+    xhr.send('');
+	printClickedInfo('');	// 이전 정보를 지운다.
+    
+    // 위에 코드는 공공데이터포털에서 준 코드야.
+}
+
+
+function nodeValue(o, key)
+{
+	return o.getElementsByTagName(key)[0].childNodes[0].nodeValue ; 
+}
+
+function myFunction(xml) {
+	let s="<tr>", o ;
+	// s += "<th>md101_sn</th>";
+	// s += "<th>create_date</th>";
+	s += "<th>location_name</th>";
+	s += "<th>msg</th>";
+	s += "<th>location_id</th>";
+	s += "</tr>";
+	// alert('a');
+	if ( typeof xml == typeof '' )	{
+		for (let i = 0; i <msgAll.length; i++) {
+			o = msgAll[i] ;
+			var j = o.location_name.indexOf(xml) ;
+			if ( j<0 )	continue ;
+			s += "<tr>" ; 
+			// s += "<td>" + o.md101_sn + "</td>" ; 
+			// s += "<td>" + o.create_date + "</td>" ; 
+			s += "<td>" + o.location_name + "</td>" ; 
+			s += "<td>" + o.msg + "</td>" ;
+			//s += "<td>" + o.location_id + "</td>" ; 
+			s += "</tr>";
+		}
+		printClickedInfo(s);
+		return ;
+	}
+	// alert('a');
+	var xmlDoc = xml.responseXML; //xml DOM 객체생성
+	var x = xmlDoc.getElementsByTagName("row");
+	if ( x.length>0 )	{
+		// alert('totalCount:'+nodeValue(x[0], "totalCount"));
+	}
+	msgAll = [] ;
+	for (let i = 0; i <x.length; i++) {
+	  o = { 
+	  	// md101_sn : nodeValue(x[i], "md101_sn"), 
+	  	// create_date: nodeValue(x[i], "create_date"), 
+	  	location_id: nodeValue(x[i], "location_id"), 
+	  	location_name: nodeValue(x[i], "location_name"), 
+	  	msg: nodeValue(x[i], "msg"),
+	  } ;
+	  msgAll.push(o) ;
+	  s += "<tr>" ; 
+	  // s += "<td>" + o.md101_sn + "</td>" ; 
+	  // s += "<td>" + o.create_date + "</td>" ; 
+	  s += "<td>" + o.location_name + "</td>" ; 
+	  s += "<td>" + o.msg + "</td>" ;
+	  //s += "<td>" + o.location_id + "</td>" ; 
+	  s += "</tr>";
+	}
+	printClickedInfo(s);
+}
+
+</script>
+</body>
+</html>
