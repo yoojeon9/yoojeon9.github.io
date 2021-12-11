@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+        <title>전국 지역별 행정안전부 재난문자방송 발령현황</title>
+
+        <!-- jquery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+        <!-- naver map -->
+        <script
+            type="text/javascript"
+            src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=6hw7de51b7"></script>
+
+    </head>
+
+    <style>
+        /* 타이틀을 보여주는 class */
+        #divMessage {
+            font-size: 24px;
+            color: rgb(98, 0, 255);
+        }
+
+        .buttonClass1 {
+            background-color: #4CAF50;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+
+            cursor: pointer;
+        };
+
+        .buttonClass2 {
+            background-color: #AF504C;
+            /* Green */
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+
+            cursor: pointer;
+        };
+
+        /* css 태그 */
+        table,
+        td,
+        th {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        td,
+        th {
+            padding: 5px;
+        }
+        select {
+            width: 300px;
+        }
+
+        /* 짝수행 */
+        tr:nth-child(even) {
+            background: #CCC;
+        }
+        /* 홀수행 */
+        tr:nth-child(odd) {
+            background: #FFF;
+        }
+
+        /* table 첫번재 컬럼 */
+        td:first-child {
+            background: #85C1E9;
+            color: blue;
+        };
+
+        /* table 첫줄 제목 */
+        tr:first-child {
+            background: #F8C471;
+        };
+    </style>
+
+    <body>
+        <div style="width:45%;float:left;height:100%;margin-right:20px;">
+            <h1>지역별 행정안전부 재난문자방송 발령현황</h1>
+            <!-- 네이버 지도 영역 -->
+            <div id="map" style="width:100%;height:600px;"></div>
+        </div>
+
+        <div style="width:50%;float:left;height:100%;">
+            <div>
+                <button
+                    id="buttonRetrieve"
+                    class="buttonClass1"
+                    type="button"
+                    title="공공 데이터 포털에서 발령현황을 조회합니다.">재난문자방송 발령현황 조회</button>
+                <button
+                    id="buttonNormapMap"
+                    class="buttonClass2"
+                    type="button"
+                    title="Normap Map으로 변경합니다.">Normal Map</button>
+                <button
+                    id="buttonHybridMap"
+                    class="buttonClass2"
+                    type="button"
+                    title="HYBRID Map으로 변경합니다.">HYBRID Map</button>
+            </div>
+            <div id="divMessage">여기에 클릭된 지역의 정보가 표시됩니다.</div>
+            <div>
+                <label>시군구 선택 :
+                </label>
+                <select id="selectCity">
+                    <option value="도시1">도시1</option>
+                    <option value="도시2">도시2</option>
+                </select>
+            </div>
+            <h3>재난문자방송 발령현황</h3>
+            <div style='padding:5px;'>
+                <table id="disaster"></table>
+            </div>
+        </div>
+
+        <script>
+            var regionGeoJson = [];
+
+            var map = naverMap(1);
+
+            function naverMap(mapType) {
+                if (mapType == 0) {
+                    return new naver
+                        .maps
+                        .Map(document.getElementById('map'), {
+                            // zoom: 7, center: new naver.maps.LatLng(36.4203004, 128.317960),
+                            zoom: 5,
+                            center: new naver
+                                .maps
+                                .LatLng(37.5666805, 126.9784147),
+                            mapTypeId: 'normal'
+                        })
+                }
+                if (mapType == 1) {
+                    return new naver
+                        .maps
+                        .Map('map', {
+                            zoom: 5,
+                            center: new naver
+                                .maps
+                                .LatLng(37.5666805, 126.9784147),
+                            mapTypeId: naver.maps.MapTypeId.HYBRID,
+                            minZoom: 6,
+                            zoomControl: true,
+                            zoomControlOptions: {
+                                position: naver.maps.Position.TOP_RIGHT
+                            },
+                            mapDataControl: false,
+                            logoControlOptions: {
+                                position: naver.maps.Position.LEFT_BOTTOM
+                            },
+                            disableKineticPan: false
+                        })
+                }
+            }
+
+            //jQuery를 이용, 툴팁 html요소를 만들고, map에 추가
+            var tooltip = $(
+                '<div style="position:absolute;z-index:1000;padding:5px 10px;background-color:#' +
+                'fff;border:solid 2px #000;font-size:14px;pointer-events:none;display:none;"></' +
+                'div>'
+            );
+            tooltip.appendTo(map.getPanes().floatPane);
+
+            // 지도가 로드된 다음에 일회성으로 실행되는 이벤트
+            naver
+                .maps
+                .Event
+                .once(map, 'init_stylemap', function () {
+                    naverMapLoaded(); // 선택영역 다운로드 및 핸들러 설정
+                    retrieveMessage(); // 재난문자 현황을 조회
+                });
+
+            function naverMapLoaded() {
+                {
+                    tooltip = $(
+                        '<div style="position:absolute;z-index:1000;padding:5px 10px;background-color:#' +
+                        'fff;border:solid 2px #000;font-size:14px;pointer-events:none;display:none;"></' +
+                        'div>'
+                    );
+                    tooltip.appendTo(map.getPanes().floatPane);
+                }
+                var HOME_PATH = "https://navermaps.github.io/maps.js/docs";
+                var urlPrefix = HOME_PATH + '/data/region';
+                var urlSuffix = '.json';
+                var loadCount = 0;
+                // 17개 영역의 지도 다운을 호출
+                for (var i = 1; i < 18; i++) {
+                    var keyword = i + '';
+                    if (keyword.length === 1) 
+                        keyword = '0' + keyword;
+                    
+                    // 01, 02, 03 생성
+                    var s = urlPrefix + keyword + urlSuffix;
+                    // if ( i==1 )	alert(s) ;
+                    $.ajax({
+                        url: urlPrefix + keyword + urlSuffix,
+                        success: function (idx) {
+                            return function (geojson) {
+                                // 각 영역이 다운완료되었을 때 마다 호출된다.
+                                regionGeoJson[idx] = geojson;
+                                loadCount++; // 영역이 다운될 때 마다 증가, 17개 다 받아오면 그리기 시작
+                                if (loadCount === 17) 
+                                    startDataLayer();
+                                }
+                            }(i - 1)
+                    });
+                }
+            }
+
+            // callback : 지도 영역 17개가 전부 다운되었을 때 호출된다.
+            function startDataLayer() {
+                map
+                    .data
+                    .setStyle(function (feature) {
+                        // 기본 라인
+                        var styleOptions = {
+                            fillColor: '#ff0000',
+                            fillOpacity: 0.0001,
+                            strokeColor: '#ff0000',
+                            strokeWeight: 2,
+                            strokeOpacity: 0.4
+                        };
+                        // 마우스 올라갔을 떄 스타일
+                        if (feature.getProperty('focus')) {
+                            styleOptions.fillOpacity = 0.6;
+                            styleOptions.fillColor = '#0f0';
+                            styleOptions.strokeColor = '#0f0';
+                            styleOptions.strokeWeight = 4;
+                            styleOptions.strokeOpacity = 1;
+                        }
+                        return styleOptions;
+                    });
+                regionGeoJson.forEach(function (geojson) {
+                    map
+                        .data
+                        .addGeoJson(geojson);
+                });
+                // 지도 영역이 클릭되었을 때 실행할 함수를 등록
+                map
+                    .data
+                    .addListener('click', function (e) {
+                        onClickedArea(e);
+                    });
+                // 지도 영역에 마우스 커서가 위치했을 때 실행할 함수를 등록
+                map
+                    .data
+                    .addListener('mouseover', function (e) {
+                        // 이름을 받아
+                        var feature = e.feature,
+                            regionName = feature.getProperty('area1');
+                        regionMSG = feature.getProperty('msg1');
+                        // 지역명 뜨는거
+                        tooltip
+                            .css({display: '', left: e.offset.x, top: e.offset.y})
+                            .text(regionName);
+                        map
+                            .data
+                            .overrideStyle(feature, {
+                                fillOpacity: 0.6,
+                                strokeWeight: 4,
+                                strokeOpacity: 1
+                            });
+                    });
+                // 지도 영역에서 마우스가 빠져 나갈때 실행할 함수를 등록
+                map
+                    .data
+                    .addListener('mouseout', function (e) {
+                        tooltip
+                            .hide()
+                            .empty(); // 툴팁 사라지게
+                        map
+                            .data
+                            .revertStyle(); // 스타일 원상복귀
+                    });
+            }
+        </script>
+
+        <script>
+            var areaPreviousClicked = ''; // 이전에 클릭한 지역
+            function printMessage(s) {
+                document
+                    .getElementById("divMessage")
+                    .innerHTML = s;
+            }
+
+            // 클릭한 지역의 정보를 테이블 형태로 보여준다.
+            function printClickedInfo(s) {
+                document
+                    .getElementById("disaster")
+                    .innerHTML = s;
+            }
+
+            //지역이 클릭되었을 때 불리는 함수
+            function onClickedArea(e) {
+                var feature = e.feature;
+
+                if (feature.getProperty('focus') !== true) {
+                    var aDo = feature.getProperty('area1');
+                    feature.setProperty('focus', true);
+                    printMessage(aDo);
+                    retrieveMessage(aDo);
+                    // 이전에 선택한 지역이 있었으면 focus를 끈다.
+                    if (areaPreviousClicked) {
+                        areaPreviousClicked.setProperty('focus', false);
+                        areaPreviousClicked = null;
+                    }
+                    areaPreviousClicked = feature;
+                } else {
+                    feature.setProperty('focus', false);
+                }
+            }
+
+            var allMessages = [];
+
+            function retrieveMessage(area1) {
+                if (area1) {
+                    processMessage(area1);
+                    return;
+                }
+                printMessage('정보를 알아 오는중!!!');
+                $('#selectCity').html(''); // 도시 콤보박스를 clear
+                // 처음 모든 지역에 대한 정보를 알아온다.
+                var numOfRows = '100'; // 가져올 갯수(전체 개수만큼 반복해서 가져와야 할 듯)
+                numOfRows = '1000'; // 단순히 한꺼번에 적당히 많이 가져온다.
+                var xhr = new XMLHttpRequest();
+                var url = 'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List';/*URL*/
+                var pm = '?' + encodeURIComponent('serviceKey') + '=nzYSW6L2EXIDbdSRn%2Fn%2F1YF' +
+                        'kHomGLYQB8CgUlbyV1N0E3%2F9AqbBgz6Os3rxQB7AUQiKf%2B8F9mcx5jzIQZjoJSQ%3D%3D';/*Service Key*/
+                pm += '&' + encodeURIComponent('pageNo') + '=' + encodeURIComponent('1');/**/
+                pm += '&' + encodeURIComponent('numOfRows') + '=' +
+                        encodeURIComponent(numOfRows);/**/
+                pm += '&' + encodeURIComponent('type') + '=' + encodeURIComponent('xml');/**/
+
+                xhr.onload = function () {
+                    var s = '정보를 알아 왔습니다.!!!<br>지도에서 원하는 지역을 클릭하면, 해당 지역에 대한 정보를 보입니다.';
+                    printMessage('원하는 지역을 클릭하세요.');
+                    processMessage(this);
+                    alert(s);
+                }
+                xhr.open('GET', url + pm);
+                xhr.send('');
+                printClickedInfo(''); // 이전 정보를 지운다.
+            }
+
+            function nodeValue(o, key) {
+                return o
+                    .getElementsByTagName(key)[0]
+                    .childNodes[0]
+                    .nodeValue;
+            }
+
+            function processMessage(xmlOrArea) {
+                let s = "<tr>",
+                    o;
+                // s += "<th>md101_sn</th>";
+                s += "<th>create_date</th>";
+                s += "<th>location_name</th>";
+                s += "<th>msg</th>";
+                // s += "<th>location_id</th>";
+                s += "</tr>"; // alert('a');
+                // 지역을 클릭했을 때, 불리는 경우이다.
+                if (typeof xmlOrArea == typeof '') {
+                    if (allMessages.length == 0) {
+                        alert('정보를 가져오는 중입니다.\n잠시 후 클릭하세요.');
+                        return;
+                    }
+                    // 저장해 둔, 메시지 배열에서, 지역명을 포함한 메시지를 찾는다.
+                    var cnt = 10,
+                        c = 0,
+                        ss = []; // 화면에 보일 갯수, 현재 찾은 갯수
+                    for (let i = 0; i < allMessages.length; i++) {
+                        o = allMessages[i];
+                        var j = o
+                            .location_name
+                            .indexOf(xmlOrArea);
+                        if (j < 0) 
+                            continue;
+                        s += "<tr>";
+                        s += "<td>" + o.create_date + "</td>";
+                        s += "<td>" + o
+                            .location_name
+                            .replace(xmlOrArea, '')
+                            .trim() + "</td>";
+                        s += "<td>" + o.msg + "</td>";
+                        s += "</tr>";
+                        c++; // 화면에 보일 갯수만큼만 찾는다.
+                        // 지역역 선택상자에 넣을 지역명
+                        for (var j = 0; j < ss.length; j++) {
+                            if (ss[j] == o.location_name) 
+                                break;
+                            }
+                        if (j >= ss.length) // 새로운 지역명
+                            ss.push(o.location_name);
+                            // if ( c>= cnt )	break ;
+                        }
+                    // alert(ss.join(','));
+                    printClickedInfo(s);
+                    ss.sort();
+                    var t = ''; // '<option>세부지역 선택</option>' ;  도시 선택 콤보박스를 초기화한다.
+                    for (var i = 0; i < ss.length; i++) 
+                        t += '<option>' + ss[i]
+                            .replace(xmlOrArea, '')
+                            .trim() + '</option>';
+                    
+                    // alert(t);
+                    $('#selectCity').html(t);
+                    return;
+                }
+                // xml : 처음 시작할 때, 전체 메시지를 가져오면서 불리는 경우
+                var xmlDoc = xmlOrArea.responseXML; //xml DOM 객체생성
+                var x = xmlDoc.getElementsByTagName("row");
+                allMessages = []; // 여기에 가져온 전체 메시지를 저장해 두고, 지역 클릭시 지역명으로 찾는다.
+                for (let i = 0; i < x.length; i++) {
+                    o = {
+                        // md101_sn : nodeValue(x[i], "md101_sn"),
+                        create_date: nodeValue(x[i], "create_date"),
+                        location_id: nodeValue(x[i], "location_id"),
+                        location_name: nodeValue(x[i], "location_name"),
+                        msg: nodeValue(x[i], "msg")
+                    };
+                    allMessages.push(o);
+                    s += "<tr>";
+                    s += "<td>" + o.create_date + "</td>";
+                    s += "<td>" + o.location_name + "</td>";
+                    s += "<td>" + o.msg + "</td>";
+                    s += "</tr>";
+                }
+            }
+
+            // 시/군 콤보박스에서 선택이 변했을 때
+            $('#selectCity').on('change', function () {
+                var e = $(this),
+                    city = e.val();
+                $('#disaster > tbody  > tr').each(function (index, tr) {
+                    tr = $(tr);
+                    var s = tr.text();
+                    if (s.indexOf(city) >= 0) 
+                        tr.show();
+                    else 
+                        tr.hide();
+                    }
+                );
+            });
+
+            $('#buttonRetrieve').on('click', function () {
+                retrieveMessage();
+            });
+
+            $('#buttonNormapMap').on('click', function () {
+                map = naverMap(0);
+                naverMapLoaded();
+            });
+
+            $('#buttonHybridMap').on('click', function () {
+                map = naverMap(1);
+                naverMapLoaded();
+            });
+        </script>
+
+    </body>
+</html>

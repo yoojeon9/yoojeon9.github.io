@@ -1,8 +1,10 @@
 <!--
-    이건 수업시간에 누가 만들어서 배포한 코드
-    지도 불러와서 지역 클릭하면 지역 이름이 지도 아래에 뜨는거
-
-    이제 공공 데이터 포털에서 재난문자 불러와서 지역 선택하면 그 지역의 재난문자가 출력되게 하면 됨!
+    1. 여기서 처음 받아온 정보를 모두 테이블로 내보내지 말고
+    경기도 | x개
+    서울   | y개 
+    이런 식으로 1000개 중 각 도별 재난문자의 개수를 나타내기.
+    2. 지역을 클릭하면 alert로 'area의 재난문자를 출력합니다. 총 x개 입니다.' 출력하기
+    3. create_date 표시하기 (완료)
 -->
 
 <!DOCTYPE html>
@@ -32,17 +34,20 @@
 </style>
 
 <body>
+    <h1>지역별 재난문자 리스트</h1>
+
 <!-- 
 <div id="map" style="width:100%;height:600px;"></div>
 <div id="table">여기에 클릭된 지역의 정보가 표시됩니다.</div>
  -->
 <div style="width:50%;float:left;height:100%;">
-	<div id="map" style="width:100%;height:1000px;"></div>
+	<div id="map" style="width:100%;height:500px;"></div>
 </div>
 <div style="width:50%;float:left;height:100%;">
 	<div id="table">여기에 클릭된 지역의 정보가 표시됩니다.</div>
 	<table id="disaster"></table>
 </div>
+
 <script>
 function loadDoc_1() {
 var xhr = new XMLHttpRequest();
@@ -195,7 +200,6 @@ var doPre = '' ; // 이전에 클릭한 지역
 function printMsg(s)
 {
  	document.getElementById("table").innerHTML = s ;
-     alert(s+'에 대한 정보를 알아옵니다.');
 }
 
 // 클릭한 지역의 정보를 테이블 형태로 보여준다.
@@ -240,21 +244,20 @@ function loadDoc(area1) {
 	}
 	printMsg('정보를 알아 오는중!!!') ;	
 	// 처음 모든 지역에 대한 정보를 알아온다.
+    var numOfRows = '100' ; // 가져올 갯수(전체 개수만큼 반복해서 가져와야 할 듯)
+	numOfRows = '1000' ; // 단순히 한꺼번에 적당히 많이 가져온다.
     var xhr = new XMLHttpRequest();
     var url = 'http://apis.data.go.kr/1741000/DisasterMsg3/getDisasterMsg1List'; /*URL*/
     var pm = '?' + encodeURIComponent('serviceKey') + '=' + 'nzYSW6L2EXIDbdSRn%2Fn%2F1YFkHomGLYQB8CgUlbyV1N0E3%2F9AqbBgz6Os3rxQB7AUQiKf%2B8F9mcx5jzIQZjoJSQ%3D%3D'; /*Service Key*/
     pm += '&' + encodeURIComponent('pageNo') + '=' + encodeURIComponent('1'); /**/
-    pm += '&' + encodeURIComponent('numOfRows') + '=' + encodeURIComponent('100'); /**/
+    pm += '&' + encodeURIComponent('numOfRows') + '=' + encodeURIComponent(numOfRows); /**/
     pm += '&' + encodeURIComponent('type') + '=' + encodeURIComponent('xml'); /**/
-    // pm += '&' + encodeURIComponent('create_date') + '=' + encodeURIComponent('2021/06/22 00:00:00'); /**/
-    // if ( !area1 )	area1 = '서울특별시' ;
-    // pm += '&' + encodeURIComponent('area1') + '=' + encodeURIComponent(area1); /**/
-    // pm += '&' + encodeURIComponent('area1') + '=' + encodeURIComponent('제주특별자치도'); /**/
-    // pm += '&' + encodeURIComponent('area2') + '=' + encodeURIComponent('서울특별시'); /**/
+
     xhr.onload = function () {
     	printMsg('정보를 알아 왔습니다.!!!<br>지도상에서 원하는 지역을 클릭하면, 해당 지역에 대한 정보를 보입니다.') ;	
         myFunction(this);
     }
+
     xhr.open('GET', url + pm);
     xhr.send('');
 	printClickedInfo('');	// 이전 정보를 지운다.
@@ -270,21 +273,27 @@ function nodeValue(o, key)
 
 function myFunction(xml) {
 	let s="<tr>", o ;
+       
 	// s += "<th>md101_sn</th>";
-	// s += "<th>create_date</th>";
+	s += "<th>create_date</th>";
 	s += "<th>location_name</th>";
 	s += "<th>msg</th>";
-	s += "<th>location_id</th>";
+	//s += "<th>location_id</th>";
 	s += "</tr>";
 	// alert('a');
-	if ( typeof xml == typeof '' )	{
+    if ( typeof xml == typeof '' )	{
+		if ( msgAll.length==0 )	{
+			alert('정보를 가져오는 중입니다.\n 잠시 후 다시 클릭하세요.') ;
+			return ;
+		}
+        
 		for (let i = 0; i <msgAll.length; i++) {
 			o = msgAll[i] ;
 			var j = o.location_name.indexOf(xml) ;
 			if ( j<0 )	continue ;
 			s += "<tr>" ; 
 			// s += "<td>" + o.md101_sn + "</td>" ; 
-			// s += "<td>" + o.create_date + "</td>" ; 
+			s += "<td>" + o.create_date + "</td>" ; 
 			s += "<td>" + o.location_name + "</td>" ; 
 			s += "<td>" + o.msg + "</td>" ;
 			//s += "<td>" + o.location_id + "</td>" ; 
@@ -303,15 +312,15 @@ function myFunction(xml) {
 	for (let i = 0; i <x.length; i++) {
 	  o = { 
 	  	// md101_sn : nodeValue(x[i], "md101_sn"), 
-	  	// create_date: nodeValue(x[i], "create_date"), 
-	  	location_id: nodeValue(x[i], "location_id"), 
+	  	create_date: nodeValue(x[i], "create_date"), 
+	  	//location_id: nodeValue(x[i], "location_id"), 
 	  	location_name: nodeValue(x[i], "location_name"), 
 	  	msg: nodeValue(x[i], "msg"),
 	  } ;
 	  msgAll.push(o) ;
 	  s += "<tr>" ; 
 	  // s += "<td>" + o.md101_sn + "</td>" ; 
-	  // s += "<td>" + o.create_date + "</td>" ; 
+	  s += "<td>" + o.create_date + "</td>" ; 
 	  s += "<td>" + o.location_name + "</td>" ; 
 	  s += "<td>" + o.msg + "</td>" ;
 	  //s += "<td>" + o.location_id + "</td>" ; 
